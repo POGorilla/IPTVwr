@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><title>Browse Genres</title></head>
+<body>
+<h1>Genres</h1>
+
+<div th:each="category : ${categories}" style="margin: 5px 0;">
+    <a th:href="@{/browse/{code}/{catId}(code=${code}, catId=${category.id})}"
+       th:text="${category.name}">Genre</a>
+</div>
+
+<br/>
+<a th:href="@{/browse}">Back to countries</a>
+</body>
+</html>

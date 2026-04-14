@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><title>Channels</title></head>
+<body>
+<h1 th:text="'Channels'">Channels</h1>
+
+<div th:if="${channels.isEmpty()}">
+    <p>No channels found for this combination.</p>
+</div>
+
+<div th:each="channel : ${channels}" style="margin: 10px 0; padding: 5px; border: 1px solid #ccc;">
+    <img th:if="${channel.logo}" th:src="${channel.logo}" width="40" height="40" style="vertical-align: middle;"/>
+    <strong th:text="${channel.name}">Channel name</strong>
+</div>
+
+<br/>
+<a th:href="@{/browse/{code}(code=${code})}">Back to genres</a> |
+<a th:href="@{/browse}">Back to countries</a>
+</body>
+</html>

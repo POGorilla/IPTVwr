@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><title>Browse Channels</title></head>
+<body>
+<h1>Browse by Country</h1>
+
+<div th:each="country : ${countries}" style="margin: 5px 0;">
+    <a th:href="@{/browse/{code}(code=${country.code})}">
+        <span th:text="${country.flag}"></span>
+        <span th:text="${country.name}">Country</span>
+    </a>
+
+    <span th:if="${country.code == detectedCode}" style="color: green;"> (detected)</span>
+</div>
+
+</body>
+</html>
