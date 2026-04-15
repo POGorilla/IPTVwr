@@ -1,25 +1,31 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head><title>My channels</title></head>
+<head th:replace="~{fragments :: head('My Channels')}"></head>
 <body>
-<h1>My channels</h1>
+<nav th:replace="~{fragments :: navbar}"></nav>
+<div class="container">
+    <h1 class="mb-4">My Channels</h1>
 
-<div th:if="${message}" style="color: green;" th:text="${message}"></div>
-<div th:if="${error}" style="color: red;" th:text="${error}"></div>
+    <div th:if="${message}" class="alert alert-success" th:text="${message}"></div>
+    <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
 
-<div th:if="${channels.isEmpty()}">
-    <p>No channels here yet! <a th:href="@{/upload}">Upload a playlist.</a></p>
+    <div th:if="${channels.isEmpty()}">
+        <p class="text-muted">No channels yet. <a th:href="@{/upload}">Upload a playlist.</a></p>
+    </div>
+
+    <div class="row">
+        <div th:each="channel : ${channels}" class="col-md-4 col-lg-3 mb-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h6 class="card-title" th:text="${channel.name}">Channel</h6>
+                    <span class="badge bg-secondary" th:text="${channel.groupTitle}">Group</span>
+                    <a th:href="@{/watch/{id}(id=${channel.id})}" class="btn btn-sm btn-primary mt-2 d-block">Watch</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <a th:href="@{/upload}" class="btn btn-outline-primary mt-3">Upload new playlist</a>
 </div>
-
-<div th:each="channel : ${channels}" style="margin-bottom: 10px; padding: 5px; border: 1px solid #ccc;">
-    <strong th:text="${channel.name}">Channel name</strong>
-    <span th:text="'[' + ${channel.groupTitle} + ']'">[Grup]</span>
-    <br/>
-    <a th:href="@{/watch/{id}(id=${channel.id})}">Watch</a>
-</div>
-
-<br/>
-<a th:href="@{/upload}">New upload</a> |
-<a th:href="@{/home}">Back</a>
 </body>
 </html>

@@ -1,20 +1,29 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head><title>Channels</title></head>
+<head th:replace="~{fragments :: head('Channels')}"></head>
 <body>
-<h1 th:text="'Channels'">Channels</h1>
+<nav th:replace="~{fragments :: navbar}"></nav>
+<div class="container">
+    <h1 class="mb-4">Channels</h1>
 
-<div th:if="${channels.isEmpty()}">
-    <p>No channels found for this combination.</p>
+    <p th:if="${channels.isEmpty()}" class="text-muted">No channels found for this combination.</p>
+
+    <div class="row">
+        <div th:each="channel : ${channels}" class="col-md-4 col-lg-3 mb-3">
+            <div class="card h-100">
+                <img th:if="${channel.logo}" th:src="${channel.logo}" class="card-img-top p-3" style="height: 80px; object-fit: contain;"/>
+                <div class="card-body">
+                    <h6 class="card-title" th:text="${channel.name}">Channel</h6>
+                    <a th:href="@{/browse/watch/{id}(id=${channel.id})}" class="btn btn-sm btn-primary">Watch</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-3">
+        <a th:href="@{/browse/{code}(code=${code})}" class="btn btn-outline-secondary">Back to genres</a>
+        <a th:href="@{/browse}" class="btn btn-outline-secondary">Back to countries</a>
+    </div>
 </div>
-
-<div th:each="channel : ${channels}" style="margin: 10px 0; padding: 5px; border: 1px solid #ccc;">
-    <img th:if="${channel.logo}" th:src="${channel.logo}" width="40" height="40" style="vertical-align: middle;"/>
-    <strong th:text="${channel.name}">Channel name</strong>
-</div>
-
-<br/>
-<a th:href="@{/browse/{code}(code=${code})}">Back to genres</a> |
-<a th:href="@{/browse}">Back to countries</a>
 </body>
 </html>

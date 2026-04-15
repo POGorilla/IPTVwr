@@ -1,17 +1,23 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head><title>Browse Channels</title></head>
+<head th:replace="~{fragments :: head('Browse Channels')}"></head>
 <body>
-<h1>Browse by Country</h1>
-
-<div th:each="country : ${countries}" style="margin: 5px 0;">
-    <a th:href="@{/browse/{code}(code=${country.code})}">
-        <span th:text="${country.flag}"></span>
-        <span th:text="${country.name}">Country</span>
-    </a>
-
-    <span th:if="${country.code == detectedCode}" style="color: green;"> (detected)</span>
+<nav th:replace="~{fragments :: navbar}"></nav>
+<div class="container">
+    <h1 class="mb-4">Browse by Country</h1>
+    <div class="row">
+        <div th:each="country : ${countries}" class="col-md-4 col-lg-3 mb-3">
+            <a th:href="@{/browse/{code}(code=${country.code})}" class="text-decoration-none">
+                <div class="card h-100" th:classappend="${country.code == detectedCode} ? 'border-success border-2'">
+                    <div class="card-body text-center">
+                        <span th:text="${country.flag}" style="font-size: 2rem;"></span>
+                        <h6 class="card-title mt-2" th:text="${country.name}">Country</h6>
+                        <span th:if="${country.code == detectedCode}" class="badge bg-success">Detected</span>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
 </div>
-
 </body>
 </html>

@@ -1,21 +1,22 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <title>Register</title>
-</head>
+<head th:replace="~{fragments :: head('Register')}"></head>
 <body>
-<h1>Register</h1>
-
-<div th:if="${error}" style="color: red;" th:text="${error}"></div>
-
-<form th:action="@{/register}" method="post">
-    <label>Username:</label><br/>
-    <input type="text" name="username" required/><br/><br/>
-    <label>Password:</label><br/>
-    <input type="password" name="password" required/><br/><br/>
-    <button type="submit">Register</button>
-</form>
-
-<p>Already have an account? <a th:href="@{/login}">Login</a></p>
+<div class="container" style="max-width: 400px; margin-top: 100px;">
+    <h2 class="text-center mb-4">Register</h2>
+    <div th:if="${message}" class="alert alert-danger" th:text="${message}"></div>
+    <form th:action="@{/register}" method="post">
+        <div class="mb-3">
+            <label class="form-label">Username</label>
+            <input type="text" name="username" class="form-control" required/>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Password</label>
+            <input type="password" name="password" class="form-control" required/>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Register</button>
+    </form>
+    <p class="text-center mt-3">Already have an account? <a th:href="@{/login}">Login</a></p>
+</div>
 </body>
 </html>

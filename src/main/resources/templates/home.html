@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head><title>Home</title></head>
+<head th:replace="~{fragments :: head('Home')}"></head>
 <body>
-<h1>Welcome!</h1>
-<a th:href="@{/upload}">Upload Playlist</a><br/>
-<a th:href="@{/channels}">My channels</a><br/><br/>
-<form th:action="@{/logout}" method="post">
-    <button type="submit">Logout</button>
-</form>
+<nav th:replace="~{fragments :: navbar}"></nav>
+<div class="container text-center mt-5">
+    <h1>Welcome!</h1>
+    <div class="mt-4">
+        <a th:href="@{/browse}" class="btn btn-primary btn-lg me-2">Browse Channels</a>
+        <a th:href="@{/upload}" class="btn btn-outline-primary btn-lg me-2">Upload Playlist</a>
+        <a th:href="@{/channels}" class="btn btn-outline-primary btn-lg">My Channels</a>
+    </div>
+</div>
 </body>
 </html>
