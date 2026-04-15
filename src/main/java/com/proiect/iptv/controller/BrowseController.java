@@ -2,6 +2,8 @@ package com.proiect.iptv.controller;
 
 import com.proiect.iptv.dto.IptvOrgChannel;
 import com.proiect.iptv.dto.IptvOrgCountry;
+import com.proiect.iptv.dto.IptvOrgStream;
+import com.proiect.iptv.dto.WatchInfo;
 import com.proiect.iptv.service.GeoLocationService;
 import com.proiect.iptv.service.IptvOrgService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -9,6 +11,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,9 +44,20 @@ public class BrowseController {
     }
 
     @GetMapping("/browse/{code}")
-    public String byCountry(@PathVariable String code, Model model) {
+    public String byCountry(@PathVariable String code,
+                            @RequestParam(required = false) String q,
+                            Model model) {
         model.addAttribute("categories", iptvOrgService.getCategories());
         model.addAttribute("code", code);
+        model.addAttribute("q", q);
+
+        if (q != null && !q.isEmpty()) {
+            List<IptvOrgChannel> results = iptvOrgService.getChannels().stream()
+                    .filter(c -> code.equals(c.getCountry()))
+                    .filter(c -> c.getName() != null && c.getName().toLowerCase().contains(q.toLowerCase()))
+                    .toList();
+            model.addAttribute("searchResults", results);
+        }
 
         return "browse-country";
     }
@@ -60,5 +74,30 @@ public class BrowseController {
         model.addAttribute("categoryId", categoryId);
 
         return "browse-channels";
+    }
+
+    @GetMapping("/browse/watch/{channelId}")
+    public String watchBrowse(@PathVariable String channelId, Model model) {
+       IptvOrgChannel channel = iptvOrgService.getChannels().stream()
+               .filter(c -> channelId.equals(c.getId()))
+               .findFirst()
+               .orElse(null);
+
+       IptvOrgStream stream = iptvOrgService.getStreams().stream()
+               .filter(s -> channelId.equals(s.getChannel()))
+               .findFirst()
+               .orElse(null);
+
+       if (channel == null || stream == null) {
+           return  "redirect:/browse";
+       }
+
+        WatchInfo info = new WatchInfo();
+        info.setName(channel.getName());
+        info.setGroupTitle(channel.getCategories().isEmpty() ? "" : channel.getCategories().getFirst());
+        info.setStreamUrl(stream.getUrl());
+
+        model.addAttribute("channel", info);
+        return "watch";
     }
 }
