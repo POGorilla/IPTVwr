@@ -46,10 +46,10 @@ public class ChannelController {
                     .orElseThrow();
             List<Channel> channels = m3uParserService.parse(file, user);
             redirectAttributes.addFlashAttribute("message",
-                    channels.size() + " canale importate cu succes!");
+                    channels.size() + " channels imported!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error",
-                    "Eroare la parsare: " + e.getMessage());
+                    "Parsing error: " + e.getMessage());
         }
         return "redirect:/channels";
     }

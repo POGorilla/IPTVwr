@@ -8,11 +8,14 @@
     <div class="row">
         <div th:each="country : ${countries}" class="col-md-4 col-lg-3 mb-3">
             <a th:href="@{/browse/{code}(code=${country.code})}" class="text-decoration-none">
-                <div class="card h-100" th:classappend="${country.code == detectedCode} ? 'border-success border-2'">
+                <div class="card h-100" th:classappend="${country.code == countryCode} ? 'border-success border-2'">
                     <div class="card-body text-center">
-                        <span th:text="${country.flag}" style="font-size: 2rem;"></span>
+                        <img th:src="@{https://flagcdn.com/w80/{code}.png(code=${#strings.toLowerCase(country.code)})}"
+                             alt="flag"
+                             width="60"
+                             onerror="this.style.display='none'"/>
                         <h6 class="card-title mt-2" th:text="${country.name}">Country</h6>
-                        <span th:if="${country.code == detectedCode}" class="badge bg-success">Detected</span>
+                        <span th:if="${country.code == countryCode}" class="badge bg-success">Detected</span>
                     </div>
                 </div>
             </a>

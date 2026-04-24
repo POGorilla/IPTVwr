@@ -11,6 +11,8 @@ public class Channel {
 
     private String name;
     private String groupTitle;
+
+    @Column(length = 2048)
     private String streamUrl;
 
     @ManyToOne
