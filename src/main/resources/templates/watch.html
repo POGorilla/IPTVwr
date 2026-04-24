@@ -9,6 +9,12 @@
 
     <video id="video" controls autoplay muted class="w-100 rounded" style="max-height: 500px; background: #000;"></video>
 
+    <div class="d-flex align-items-center gap-2 mt-2">
+        <button id="prevBtn" class="btn btn-sm btn-outline-secondary" onclick="prevSource()" disabled>&larr; Prev</button>
+        <span id="status" class="text-muted small">Loading source 1...</span>
+        <button id="nextBtn" class="btn btn-sm btn-outline-secondary" onclick="nextSource()">Next &rarr;</button>
+    </div>
+
     <div class="mt-3">
         <a th:href="@{/channels}" class="btn btn-outline-secondary">My Channels</a>
         <a th:href="@{/browse}" class="btn btn-outline-secondary">Browse</a>
@@ -17,15 +23,92 @@
 
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <script th:inline="javascript">
-    var streamUrl = [[${channel.streamUrl}]];
+    var streamUrls = [[${streamUrls != null ? streamUrls : {channel.streamUrl}}]];
+    var currentIndex = 0;
     var video = document.getElementById('video');
-    if (Hls.isSupported()) {
-        var hls = new Hls();
-        hls.loadSource(streamUrl);
-        hls.attachMedia(video);
-    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        video.src = streamUrl;
+    var currentHls = null;
+    var autoTimeout = null;
+
+    function updateButtons() {
+        document.getElementById('prevBtn').disabled = (currentIndex <= 0);
+        document.getElementById('nextBtn').disabled = (currentIndex >= streamUrls.length - 1);
     }
+
+    function setStatus(text, color) {
+        var el = document.getElementById('status');
+        el.textContent = text;
+        el.className = 'small text-' + (color || 'muted');
+    }
+
+    function tryStream(index, auto) {
+        if (index < 0 || index >= streamUrls.length) {
+            setStatus('All sources failed.', 'danger');
+            return;
+        }
+
+        currentIndex = index;
+        var raw = streamUrls[index];
+        var url = '/stream?url=' + encodeURIComponent(raw);
+        setStatus('Trying source ' + (index + 1) + '/' + streamUrls.length, 'warning');
+        updateButtons();
+
+        if (currentHls) {
+            currentHls.destroy();
+            currentHls = null;
+        }
+
+        if (autoTimeout) {
+            clearTimeout(autoTimeout);
+            autoTimeout = null;
+        }
+
+        if (auto) {
+            autoTimeout = setTimeout(function() {
+                tryStream(index + 1, true);
+            }, 8000);
+        }
+
+        video.onplaying = function() {
+            if (autoTimeout) {
+                clearTimeout(autoTimeout);
+                autoTimeout = null;
+            }
+            setStatus('Playing source ' + (currentIndex + 1) + '/' + streamUrls.length, 'success');
+        };
+
+        if (raw.includes('.m3u8') && Hls.isSupported()) {
+            var hls = new Hls();
+            currentHls = hls;
+            hls.loadSource(url);
+            hls.attachMedia(video);
+            hls.on(Hls.Events.ERROR, function(event, data) {
+                if (data.fatal) {
+                    if (autoTimeout) clearTimeout(autoTimeout);
+                    hls.destroy();
+                    if (auto) tryStream(index + 1, true);
+                    else setStatus('Source ' + (index + 1) + ' failed.', 'danger');
+                }
+            });
+        } else {
+            video.src = url;
+            video.onerror = function() {
+                if (autoTimeout) clearTimeout(autoTimeout);
+                if (auto) tryStream(index + 1, true);
+                else setStatus('Source ' + (index + 1) + ' failed.', 'danger');
+            };
+            video.play();
+        }
+    }
+
+    function prevSource() {
+        tryStream(currentIndex - 1, false);
+    }
+
+    function nextSource() {
+        tryStream(currentIndex + 1, false);
+    }
+
+    tryStream(0, true);
 </script>
 </body>
 </html>

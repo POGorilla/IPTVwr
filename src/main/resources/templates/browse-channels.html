@@ -14,7 +14,11 @@
                 <img th:if="${channel.logo}" th:src="${channel.logo}" class="card-img-top p-3" style="height: 80px; object-fit: contain;"/>
                 <div class="card-body">
                     <h6 class="card-title" th:text="${channel.name}">Channel</h6>
-                    <a th:href="@{/browse/watch/{id}(id=${channel.id})}" class="btn btn-sm btn-primary">Watch</a>
+                    <a th:if="${availableStreams.contains(channel.id)}"
+                       th:href="@{/browse/watch/{id}(id=${channel.id})}"
+                       class="btn btn-sm btn-primary">Watch</a>
+                    <span th:unless="${availableStreams.contains(channel.id)}"
+                          class="text-danger small">Unavailable</span>
                 </div>
             </div>
         </div>
