@@ -1,32 +1,52 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head><title>My playlists</title></head>
+<head th:replace="~{fragments :: head('My Playlists')}"></head>
 <body>
-<h1>My playlists</h1>
+<nav th:replace="~{fragments :: navbar}"></nav>
+<div class="container">
+    <h1 class="mb-4">My Playlists</h1>
 
-<div th:if="${message}" style="color: green;" th:text="${message}"></div>
-<div th:if="${error}" style="color: red;" th:text="${error}"></div>
+    <div th:if="${message}" class="alert alert-success" th:text="${message}"></div>
+    <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
 
-<div th:if="${playlists.isEmpty()}">
-    <p>No playlists yet! <a th:href="@{/upload}">Upload one.</a></p>
-</div>
-
-<div th:each="p : ${playlists}" style="margin-bottom: 10px; padding: 5px; border: 1px solid #ccc;">
-    <a th:href="@{/playlists/{id}(id=${p.id})}" th:text="${p.name}">Name</a>
-
-    <form th:action="@{/playlists/{id}/rename(id=${p.id})}" method="post" style="display:inline;">
-        <input type="text" name="name" th:value="${p.name}" required/>
-        <button type="submit">Rename</button>
+    <form th:action="@{/playlists/new}" method="post" class="d-flex gap-2 mb-4" style="max-width: 400px;">
+        <input type="text" name="name" class="form-control" placeholder="New playlist name..." required/>
+        <button type="submit" class="btn btn-success">Create empty</button>
     </form>
 
-    <form th:action="@{/playlists/{id}/delete(id=${p.id})}" method="post" style="display:inline;"
-          onsubmit="return confirm('Delete this playlist and all its channels?');">
-        <button type="submit">Delete</button>
-    </form>
-</div>
+    <div th:if="${playlists.isEmpty()}" class="alert alert-info">
+        No playlists yet! <a th:href="@{/upload}" class="alert-link">Upload one.</a>
+    </div>
 
-<br/>
-<a th:href="@{/upload}">New upload</a> |
-<a th:href="@{/home}">Back</a>
+    <div class="list-group mb-4" th:unless="${playlists.isEmpty()}">
+        <div th:each="p : ${playlists}" class="list-group-item d-flex align-items-center gap-2">
+            <a th:href="@{/playlists/{id}(id=${p.id})}"
+               class="flex-grow-1 text-decoration-none fw-bold">
+                <span th:text="${p.name}">Name</span>
+                <span th:if="${p.locked}" class="badge bg-warning text-dark ms-2">Default</span>
+            </a>
+
+            <a th:href="@{/playlists/{id}/export(id=${p.id})}"
+               class="btn btn-sm btn-outline-success">Export</a>
+
+            <form th:unless="${p.locked}"
+                  th:action="@{/playlists/{id}/rename(id=${p.id})}" method="post"
+                  class="d-flex gap-1">
+                <input type="text" name="name" th:value="${p.name}"
+                       class="form-control form-control-sm" required/>
+                <button type="submit" class="btn btn-sm btn-outline-primary">Rename</button>
+            </form>
+
+            <form th:unless="${p.locked}"
+                  th:action="@{/playlists/{id}/delete(id=${p.id})}" method="post"
+                  onsubmit="return confirm('Delete this playlist and all its channels?');">
+                <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+            </form>
+        </div>
+    </div>
+
+    <a th:href="@{/upload}" class="btn btn-primary">New upload</a>
+    <a th:href="@{/home}" class="btn btn-outline-secondary">Back</a>
+</div>
 </body>
 </html>

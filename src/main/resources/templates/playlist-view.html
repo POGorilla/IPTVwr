@@ -1,21 +1,80 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head><title th:text="${playlist.name}">Playlist</title></head>
+<head th:replace="~{fragments :: head(${playlist.name})}"></head>
 <body>
-<h1 th:text="${playlist.name}">Playlist</h1>
+<nav th:replace="~{fragments :: navbar}"></nav>
+<div class="container">
+    <div class="d-flex align-items-center gap-3 mb-4">
+        <h1 class="mb-0">
+            <span th:text="${playlist.name}">Playlist</span>
+            <span th:if="${playlist.locked}" class="badge bg-warning text-dark fs-6 align-middle">Default</span>
+        </h1>
+        <a th:href="@{/playlists/{id}/export(id=${playlist.id})}"
+           class="btn btn-outline-success">Export .m3u</a>
+    </div>
 
-<div th:if="${channels.isEmpty()}">
-    <p>No channels in this playlist.</p>
+    <div class="card mb-4">
+        <div class="card-header">Add channel manually</div>
+        <div class="card-body">
+            <form th:action="@{/playlists/{id}/channels(id=${playlist.id})}" method="post">
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <label class="form-label">Name</label>
+                        <input type="text" name="name" class="form-control" required/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Category (optional)</label>
+                        <input type="text" name="category" class="form-control"/>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Country (e.g. RO)</label>
+                        <input type="text" name="country" class="form-control" maxlength="2"/>
+                    </div>
+                    <div class="col-md-9">
+                        <label class="form-label">Stream URL</label>
+                        <input type="url" name="streamUrl" class="form-control" required/>
+                    </div>
+                    <div class="col-12 mt-2">
+                        <button type="submit" class="btn btn-success">Add channel</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <p th:if="${channels.isEmpty()}" class="text-muted">No channels in this playlist.</p>
+
+    <div class="list-group mb-4" th:unless="${channels.isEmpty()}">
+        <div th:each="channel : ${channels}"
+             th:with="key=${channel.name + '|' + (channel.groupTitle ?: '') + '|' + (channel.country ?: '')}"
+             class="list-group-item d-flex align-items-center gap-3">
+            <div class="flex-grow-1">
+                <strong th:text="${channel.name}">Channel name</strong>
+                <span class="badge bg-secondary ms-2" th:if="${channel.groupTitle}" th:text="${channel.groupTitle}">Group</span>
+                <span th:if="${channel.country}" class="badge bg-info ms-1" th:text="${channel.country}">Country</span>
+            </div>
+
+            <form th:action="@{/favorites/toggle}" method="post" class="d-inline">
+                <input type="hidden" name="name" th:value="${channel.name}"/>
+                <input type="hidden" name="category" th:value="${channel.groupTitle}"/>
+                <input type="hidden" name="country" th:value="${channel.country}"/>
+                <input type="hidden" name="streamUrl" th:value="${channel.streamUrl}"/>
+                <button type="submit" class="btn btn-link p-0 fs-4"
+                        th:title="${favoriteKeys.contains(key) ? 'Unstar' : 'Add to Favorites'}"
+                        th:text="${favoriteKeys.contains(key) ? '★' : '☆'}">☆</button>
+            </form>
+
+            <a th:href="@{/watch/{id}(id=${channel.id})}" class="btn btn-sm btn-primary">Watch</a>
+
+            <form th:action="@{/playlists/{pid}/channels/{cid}/delete(pid=${playlist.id}, cid=${channel.id})}"
+                  method="post" class="d-inline"
+                  onsubmit="return confirm('Remove this channel from the playlist?');">
+                <button type="submit" class="btn btn-sm btn-outline-danger">×</button>
+            </form>
+        </div>
+    </div>
+
+    <a th:href="@{/playlists}" class="btn btn-outline-secondary">Back to playlists</a>
 </div>
-
-<div th:each="channel : ${channels}" style="margin-bottom: 10px; padding: 5px; border: 1px solid #ccc;">
-    <strong th:text="${channel.name}">Channel name</strong>
-    <span th:text="'[' + ${channel.groupTitle} + ']'">[Group]</span>
-    <br/>
-    <a th:href="@{/watch/{id}(id=${channel.id})}">Watch</a>
-</div>
-
-<br/>
-<a th:href="@{/playlists}">Back to playlists</a>
 </body>
 </html>

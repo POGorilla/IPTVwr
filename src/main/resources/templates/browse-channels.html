@@ -9,16 +9,33 @@
     <p th:if="${channels.isEmpty()}" class="text-muted">No channels found for this combination.</p>
 
     <div class="row">
-        <div th:each="channel : ${channels}" class="col-md-4 col-lg-3 mb-3">
+        <div th:each="channel : ${channels}"
+             th:with="cat=${channel.categories != null and !channel.categories.isEmpty() ? channel.categories[0] : ''},
+                      key=${channel.name + '|' + cat + '|' + (channel.country ?: '')}"
+             class="col-md-4 col-lg-3 mb-3">
             <div class="card h-100">
                 <img th:if="${channel.logo}" th:src="${channel.logo}" class="card-img-top p-3" style="height: 80px; object-fit: contain;"/>
                 <div class="card-body">
                     <h6 class="card-title" th:text="${channel.name}">Channel</h6>
-                    <a th:if="${availableStreams.contains(channel.id)}"
-                       th:href="@{/browse/watch/{id}(id=${channel.id})}"
-                       class="btn btn-sm btn-primary">Watch</a>
-                    <span th:unless="${availableStreams.contains(channel.id)}"
-                          class="text-danger small">Unavailable</span>
+
+                    <div class="d-flex align-items-center gap-2">
+                        <a th:if="${availableStreams.contains(channel.id)}"
+                           th:href="@{/browse/watch/{id}(id=${channel.id})}"
+                           class="btn btn-sm btn-primary">Watch</a>
+                        <span th:unless="${availableStreams.contains(channel.id)}"
+                              class="text-danger small">Unavailable</span>
+
+                        <form th:if="${availableStreams.contains(channel.id)}"
+                              th:action="@{/favorites/toggle}" method="post" class="d-inline">
+                            <input type="hidden" name="name" th:value="${channel.name}"/>
+                            <input type="hidden" name="category" th:value="${cat}"/>
+                            <input type="hidden" name="country" th:value="${channel.country}"/>
+                            <input type="hidden" name="streamUrl" th:value="${streamUrlMap.get(channel.id)}"/>
+                            <button type="submit" class="btn btn-sm btn-link p-0 fs-5"
+                                    th:title="${favoriteKeys.contains(key) ? 'Unstar' : 'Add to Favorites'}"
+                                    th:text="${favoriteKeys.contains(key) ? '★' : '☆'}">☆</button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>

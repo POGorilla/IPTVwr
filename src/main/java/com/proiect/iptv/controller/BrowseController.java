@@ -4,6 +4,7 @@ import com.proiect.iptv.dto.IptvOrgChannel;
 import com.proiect.iptv.dto.IptvOrgCountry;
 import com.proiect.iptv.dto.IptvOrgStream;
 import com.proiect.iptv.dto.WatchInfo;
+import com.proiect.iptv.service.FavoritesService;
 import com.proiect.iptv.service.GeoLocationService;
 import com.proiect.iptv.service.IptvOrgService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -11,26 +12,26 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.security.Principal;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Controller
 public class BrowseController {
     private final GeoLocationService geoLocationService;
     private final IptvOrgService iptvOrgService;
+    private final FavoritesService favoritesService;
 
-    public BrowseController(GeoLocationService geoLocationService, IptvOrgService iptvOrgService) {
+    public BrowseController(GeoLocationService geoLocationService,
+                            IptvOrgService iptvOrgService,
+                            FavoritesService favoritesService) {
         this.geoLocationService = geoLocationService;
         this.iptvOrgService = iptvOrgService;
+        this.favoritesService = favoritesService;
     }
 
     private Set<String> getAvailableStreamIds() {
@@ -40,26 +41,35 @@ public class BrowseController {
                 .collect(Collectors.toSet());
     }
 
+    private Map<String, String> getStreamUrlMap() {
+        return iptvOrgService.getStreams().stream()
+                .filter(s -> s.getChannel() != null)
+                .collect(Collectors.toMap(
+                        IptvOrgStream::getChannel,
+                        IptvOrgStream::getUrl,
+                        (a, b) -> a));
+    }
+
     @GetMapping("/browse")
     public String browse(HttpServletRequest request, Model model) {
         String countryCode = geoLocationService.detectCountryCode(request);
 
         List<IptvOrgCountry> sorted = new ArrayList<>(iptvOrgService.getCountries());
         sorted.sort((a, b) -> {
-            if (a.getCode().equals(countryCode)) return -1;
-            if (b.getCode().equals(countryCode)) return 1;
+            if (Objects.equals(a.getCode(), countryCode)) return -1;
+            if (Objects.equals(b.getCode(), countryCode)) return 1;
             return a.getName().compareTo(b.getName());
         });
 
         model.addAttribute("countries", sorted);
         model.addAttribute("countryCode", countryCode);
-
         return "browse";
     }
 
     @GetMapping("/browse/{code}")
     public String byCountry(@PathVariable String code,
                             @RequestParam(required = false) String q,
+                            Principal principal,
                             Model model) {
         model.addAttribute("categories", iptvOrgService.getCategories());
         model.addAttribute("code", code);
@@ -72,13 +82,18 @@ public class BrowseController {
                     .toList();
             model.addAttribute("searchResults", results);
             model.addAttribute("availableStreams", getAvailableStreamIds());
+            model.addAttribute("streamUrlMap", getStreamUrlMap());
+            model.addAttribute("favoriteKeys", favoritesService.getFavoriteKeys(principal));
         }
 
         return "browse-country";
     }
 
     @GetMapping("/browse/{code}/{categoryId}")
-    public String byCategory(@PathVariable String code, @PathVariable String categoryId, Model model) {
+    public String byCategory(@PathVariable String code,
+                             @PathVariable String categoryId,
+                             Principal principal,
+                             Model model) {
         List<IptvOrgChannel> filtered = iptvOrgService.getChannels().stream()
                 .filter(c -> code.equals(c.getCountry()))
                 .filter(c -> c.getCategories() != null && c.getCategories().contains(categoryId))
@@ -88,12 +103,14 @@ public class BrowseController {
         model.addAttribute("code", code);
         model.addAttribute("categoryId", categoryId);
         model.addAttribute("availableStreams", getAvailableStreamIds());
+        model.addAttribute("streamUrlMap", getStreamUrlMap());
+        model.addAttribute("favoriteKeys", favoritesService.getFavoriteKeys(principal));
 
         return "browse-channels";
     }
 
     @GetMapping("/browse/watch/{channelId}")
-    public String watchBrowse(@PathVariable String channelId, Model model) {
+    public String watchBrowse(@PathVariable String channelId, Principal principal, Model model) {
         IptvOrgChannel channel = iptvOrgService.getChannels().stream()
                 .filter(c -> channelId.equals(c.getId()))
                 .findFirst()
@@ -109,13 +126,21 @@ public class BrowseController {
             return "browse";
         }
 
+        String category = (channel.getCategories() != null && !channel.getCategories().isEmpty())
+                ? channel.getCategories().getFirst() : "";
+
         WatchInfo info = new WatchInfo();
         info.setName(channel.getName());
-        info.setGroupTitle(channel.getCategories() != null && !channel.getCategories().isEmpty() ? channel.getCategories().getFirst() : "");
+        info.setGroupTitle(category);
+        info.setCountry(channel.getCountry());
         info.setStreamUrl(streamUrls.getFirst());
+
+        Set<String> favKeys = favoritesService.getFavoriteKeys(principal);
+        String key = favoritesService.keyFor(channel.getName(), category, channel.getCountry());
 
         model.addAttribute("channel", info);
         model.addAttribute("streamUrls", streamUrls);
+        model.addAttribute("isFavorited", favKeys.contains(key));
         return "watch";
     }
 
@@ -144,7 +169,7 @@ public class BrowseController {
 
                 outputStream.write(rewritten.getBytes());
             } catch (Exception ex) {
-
+                System.err.println("Playlist proxy failed: " + ex.getMessage());
             }
         };
 
@@ -158,7 +183,7 @@ public class BrowseController {
             try (InputStream is = new java.net.URI(url).toURL().openStream()) {
                 is.transferTo(outputStream);
             } catch (Exception ex) {
-
+                System.err.println("Direct proxy failed: " + ex.getMessage());
             }
         };
 

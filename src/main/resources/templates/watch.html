@@ -4,7 +4,18 @@
 <body>
 <nav th:replace="~{fragments :: navbar}"></nav>
 <div class="container">
-    <h1 th:text="${channel.name}">Channel</h1>
+    <div class="d-flex align-items-center gap-3 mb-2">
+        <h1 class="mb-0" th:text="${channel.name}">Channel</h1>
+        <form th:action="@{/favorites/toggle}" method="post" class="d-inline">
+            <input type="hidden" name="name" th:value="${channel.name}"/>
+            <input type="hidden" name="category" th:value="${channel.groupTitle}"/>
+            <input type="hidden" name="country" th:value="${channel.country}"/>
+            <input type="hidden" name="streamUrl" th:value="${channel.streamUrl}"/>
+            <button type="submit" class="btn btn-link p-0 fs-2"
+                    th:title="${isFavorited ? 'Unstar' : 'Add to Favorites'}"
+                    th:text="${isFavorited ? '★' : '☆'}">☆</button>
+        </form>
+    </div>
     <p class="text-muted" th:text="'Group: ' + ${channel.groupTitle}">Group</p>
 
     <video id="video" controls autoplay muted class="w-100 rounded" style="max-height: 500px; background: #000;"></video>
@@ -16,7 +27,7 @@
     </div>
 
     <div class="mt-3">
-        <a th:href="@{/channels}" class="btn btn-outline-secondary">My Channels</a>
+        <a th:href="@{/playlists}" class="btn btn-outline-secondary">My Playlists</a>
         <a th:href="@{/browse}" class="btn btn-outline-secondary">Browse</a>
     </div>
 </div>

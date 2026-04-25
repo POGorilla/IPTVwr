@@ -1,20 +1,24 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head><title>Upload Playlist</title></head>
+<head th:replace="~{fragments :: head('Upload Playlist')}"></head>
 <body>
-<h1>Upload .m3u Playlist</h1>
+<nav th:replace="~{fragments :: navbar}"></nav>
+<div class="container" style="max-width: 500px;">
+    <h1 class="mb-4">Upload .m3u Playlist</h1>
 
-<form th:action="@{/upload}" method="post" enctype="multipart/form-data">
-    <label>Playlist name:
-        <input type="text" name="playlistName" required/>
-    </label>
-    <br/><br/>
-    <input type="file" name="file" accept=".m3u,.m3u8" required/>
-    <br/><br/>
-    <button type="submit">Upload</button>
-</form>
-
-<br/>
-<a th:href="@{/playlists}">Back</a>
+    <form th:action="@{/upload}" method="post" enctype="multipart/form-data">
+        <div class="mb-3">
+            <label class="form-label">Playlist name</label>
+            <input type="text" name="playlistName" class="form-control" required/>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">File (.m3u / .m3u8)</label>
+            <input type="file" name="file" class="form-control"
+                   accept=".m3u,.m3u8" required/>
+        </div>
+        <button type="submit" class="btn btn-primary">Upload</button>
+        <a th:href="@{/playlists}" class="btn btn-outline-secondary">Back</a>
+    </form>
+</div>
 </body>
 </html>

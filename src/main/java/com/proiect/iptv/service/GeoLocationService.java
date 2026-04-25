@@ -24,6 +24,6 @@ public class GeoLocationService {
         }
 
         GeoResponse response = restTemplate.getForObject(url, GeoResponse.class);
-        return response.getCountryCode();
+        return (response != null) ? response.getCountryCode() : null;
     }
 }

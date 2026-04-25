@@ -11,10 +11,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class IptvOrgService {
     private static final String BASE_URL = "https://iptv-org.github.io/api";
+    private static final Set<String> BLOCKED_CATEGORIES = Set.of("xxx");
+
     private final RestTemplate restTemplate;
 
     private List<IptvOrgChannel> channels;
@@ -22,59 +25,53 @@ public class IptvOrgService {
     private List<IptvOrgStream> streams;
     private List<IptvOrgCategory> categories;
 
-    @PostConstruct
-    public void init() {
-        this.channels = fetchChannels();
-        this.countries = fetchCountries();
-        this.streams = fetchStreams();
-        this.categories = fetchCategories();
-    }
-
     public IptvOrgService(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
     }
 
-    private List<IptvOrgCountry> fetchCountries() {
-        String url = BASE_URL + "/countries.json";
+    @PostConstruct
+    public void init() {
+        this.channels = filterChannels(fetchChannels());
+        this.countries = fetchCountries();
+        this.streams = fetchStreams();
+        this.categories = filterCategories(fetchCategories());
+    }
 
-        return restTemplate.exchange(url, HttpMethod.GET, null, new ParameterizedTypeReference<List<IptvOrgCountry>>() {})
-                .getBody();
+    private List<IptvOrgCategory> filterCategories(List<IptvOrgCategory> all) {
+        return all.stream()
+                .filter(c -> !BLOCKED_CATEGORIES.contains(c.getId()))
+                .toList();
+    }
+
+    private List<IptvOrgChannel> filterChannels(List<IptvOrgChannel> all) {
+        return all.stream()
+                .filter(c -> c.getCategories() == null
+                        || c.getCategories().stream().noneMatch(BLOCKED_CATEGORIES::contains))
+                .toList();
+    }
+
+    private List<IptvOrgCountry> fetchCountries() {
+        return restTemplate.exchange(BASE_URL + "/countries.json", HttpMethod.GET, null,
+                new ParameterizedTypeReference<List<IptvOrgCountry>>() {}).getBody();
     }
 
     private List<IptvOrgCategory> fetchCategories() {
-        String url = BASE_URL + "/categories.json";
-
-        return restTemplate.exchange(url, HttpMethod.GET, null, new ParameterizedTypeReference<List<IptvOrgCategory>>() {})
-                .getBody();
+        return restTemplate.exchange(BASE_URL + "/categories.json", HttpMethod.GET, null,
+                new ParameterizedTypeReference<List<IptvOrgCategory>>() {}).getBody();
     }
 
     private List<IptvOrgChannel> fetchChannels() {
-        String url = BASE_URL + "/channels.json";
-
-        return restTemplate.exchange(url, HttpMethod.GET, null, new ParameterizedTypeReference<List<IptvOrgChannel>>() {})
-                .getBody();
+        return restTemplate.exchange(BASE_URL + "/channels.json", HttpMethod.GET, null,
+                new ParameterizedTypeReference<List<IptvOrgChannel>>() {}).getBody();
     }
 
     private List<IptvOrgStream> fetchStreams() {
-        String url = BASE_URL + "/streams.json";
-
-        return restTemplate.exchange(url, HttpMethod.GET, null, new ParameterizedTypeReference<List<IptvOrgStream>>() {})
-                .getBody();
+        return restTemplate.exchange(BASE_URL + "/streams.json", HttpMethod.GET, null,
+                new ParameterizedTypeReference<List<IptvOrgStream>>() {}).getBody();
     }
 
-    public List<IptvOrgChannel> getChannels() {
-        return channels;
-    }
-
-    public List<IptvOrgCountry> getCountries() {
-        return countries;
-    }
-
-    public List<IptvOrgStream> getStreams() {
-        return streams;
-    }
-
-    public List<IptvOrgCategory> getCategories() {
-        return categories;
-    }
+    public List<IptvOrgChannel> getChannels() { return channels; }
+    public List<IptvOrgCountry> getCountries() { return countries; }
+    public List<IptvOrgStream> getStreams() { return streams; }
+    public List<IptvOrgCategory> getCategories() { return categories; }
 }

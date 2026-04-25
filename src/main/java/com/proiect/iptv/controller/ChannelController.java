@@ -6,8 +6,10 @@ import com.proiect.iptv.entity.User;
 import com.proiect.iptv.repository.ChannelRepository;
 import com.proiect.iptv.repository.PlaylistRepository;
 import com.proiect.iptv.repository.UserRepository;
+import com.proiect.iptv.service.FavoritesService;
 import com.proiect.iptv.service.M3UParserService;
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,6 +20,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.security.Principal;
 import java.util.List;
+import java.util.Set;
 
 @Controller
 public class ChannelController {
@@ -26,15 +29,18 @@ public class ChannelController {
     private final ChannelRepository channelRepository;
     private final PlaylistRepository playlistRepository;
     private final UserRepository userRepository;
+    private final FavoritesService favoritesService;
 
     public ChannelController(M3UParserService m3uParserService,
                              ChannelRepository channelRepository,
                              PlaylistRepository playlistRepository,
-                             UserRepository userRepository) {
+                             UserRepository userRepository,
+                             FavoritesService favoritesService) {
         this.m3uParserService = m3uParserService;
         this.channelRepository = channelRepository;
         this.playlistRepository = playlistRepository;
         this.userRepository = userRepository;
+        this.favoritesService = favoritesService;
     }
 
     @GetMapping("/upload")
@@ -43,6 +49,7 @@ public class ChannelController {
     }
 
     @PostMapping("/upload")
+    @Transactional
     public String uploadFile(@RequestParam("file") MultipartFile file,
                              @RequestParam("playlistName") String playlistName,
                              Principal principal,
@@ -81,7 +88,11 @@ public class ChannelController {
             return "redirect:/playlists";
         }
 
+        Set<String> favKeys = favoritesService.getFavoriteKeys(user);
+        boolean isFavorited = favKeys.contains(favoritesService.keyFor(channel));
+
         model.addAttribute("channel", channel);
+        model.addAttribute("isFavorited", isFavorited);
         return "watch";
     }
 }
