@@ -16,46 +16,17 @@ public class Channel {
     private String streamUrl;
 
     @ManyToOne
-    @JoinColumn(name = "user_id")
-    private User user;
+    @JoinColumn(name = "playlist_id")
+    private Playlist playlist;
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getGroupTitle() {
-        return groupTitle;
-    }
-
-    public void setGroupTitle(String groupTitle) {
-        this.groupTitle = groupTitle;
-    }
-
-    public String getStreamUrl() {
-        return streamUrl;
-    }
-
-    public void setStreamUrl(String streamUrl) {
-        this.streamUrl = streamUrl;
-    }
-
-    public User getUser() {
-        return user;
-    }
-
-    public void setUser(User user) {
-        this.user = user;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+    public String getGroupTitle() { return groupTitle; }
+    public void setGroupTitle(String groupTitle) { this.groupTitle = groupTitle; }
+    public String getStreamUrl() { return streamUrl; }
+    public void setStreamUrl(String streamUrl) { this.streamUrl = streamUrl; }
+    public Playlist getPlaylist() { return playlist; }
+    public void setPlaylist(Playlist playlist) { this.playlist = playlist; }
 }

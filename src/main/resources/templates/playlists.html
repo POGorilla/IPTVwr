@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><title>My playlists</title></head>
+<body>
+<h1>My playlists</h1>
+
+<div th:if="${message}" style="color: green;" th:text="${message}"></div>
+<div th:if="${error}" style="color: red;" th:text="${error}"></div>
+
+<div th:if="${playlists.isEmpty()}">
+    <p>No playlists yet! <a th:href="@{/upload}">Upload one.</a></p>
+</div>
+
+<div th:each="p : ${playlists}" style="margin-bottom: 10px; padding: 5px; border: 1px solid #ccc;">
+    <a th:href="@{/playlists/{id}(id=${p.id})}" th:text="${p.name}">Name</a>
+
+    <form th:action="@{/playlists/{id}/rename(id=${p.id})}" method="post" style="display:inline;">
+        <input type="text" name="name" th:value="${p.name}" required/>
+        <button type="submit">Rename</button>
+    </form>
+
+    <form th:action="@{/playlists/{id}/delete(id=${p.id})}" method="post" style="display:inline;"
+          onsubmit="return confirm('Delete this playlist and all its channels?');">
+        <button type="submit">Delete</button>
+    </form>
+</div>
+
+<br/>
+<a th:href="@{/upload}">New upload</a> |
+<a th:href="@{/home}">Back</a>
+</body>
+</html>

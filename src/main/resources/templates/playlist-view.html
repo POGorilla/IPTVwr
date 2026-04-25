@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><title th:text="${playlist.name}">Playlist</title></head>
+<body>
+<h1 th:text="${playlist.name}">Playlist</h1>
+
+<div th:if="${channels.isEmpty()}">
+    <p>No channels in this playlist.</p>
+</div>
+
+<div th:each="channel : ${channels}" style="margin-bottom: 10px; padding: 5px; border: 1px solid #ccc;">
+    <strong th:text="${channel.name}">Channel name</strong>
+    <span th:text="'[' + ${channel.groupTitle} + ']'">[Group]</span>
+    <br/>
+    <a th:href="@{/watch/{id}(id=${channel.id})}">Watch</a>
+</div>
+
+<br/>
+<a th:href="@{/playlists}">Back to playlists</a>
+</body>
+</html>

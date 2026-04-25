@@ -1,7 +1,7 @@
 package com.proiect.iptv.service;
 
 import com.proiect.iptv.entity.Channel;
-import com.proiect.iptv.entity.User;
+import com.proiect.iptv.entity.Playlist;
 import com.proiect.iptv.repository.ChannelRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -20,7 +20,7 @@ public class M3UParserService {
         this.channelRepository = channelRepository;
     }
 
-    public List<Channel> parse(MultipartFile file, User user) throws IOException {
+    public List<Channel> parse(MultipartFile file, Playlist playlist) throws IOException {
         List<Channel> channels = new ArrayList<>();
         BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream()));
         String line;
@@ -30,7 +30,6 @@ public class M3UParserService {
         while ((line = reader.readLine()) != null) {
             if (line.startsWith("#EXTINF:")) {
                 name = line.substring(line.lastIndexOf(",") + 1).trim();
-
                 if (line.contains("group-title=\"")) {
                     int start = line.indexOf("group-title=\"") + 13;
                     int end = line.indexOf("\"", start);
@@ -41,7 +40,7 @@ public class M3UParserService {
                 channel.setName(name != null ? name : "Unknown");
                 channel.setGroupTitle(group != null ? group : "Uncategorized");
                 channel.setStreamUrl(line.trim());
-                channel.setUser(user);
+                channel.setPlaylist(playlist);
                 channels.add(channel);
                 name = null;
                 group = null;
