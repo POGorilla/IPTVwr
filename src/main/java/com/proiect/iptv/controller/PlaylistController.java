@@ -58,7 +58,7 @@ public class PlaylistController {
     public String createEmpty(@RequestParam String name, Principal principal) {
         User user = userRepository.findByUsername(principal.getName()).orElseThrow();
         Playlist playlist = new Playlist();
-        playlist.setName(name != null && !name.isBlank() ? name : "Untitled");
+        playlist.setName(sanitizeName(name));
         playlist.setUser(user);
         playlistRepository.save(playlist);
         return "redirect:/playlists/" + playlist.getId();
@@ -112,7 +112,7 @@ public class PlaylistController {
         if (!playlist.getUser().getId().equals(user.getId()) || playlist.isLocked()) {
             return "redirect:/playlists";
         }
-        playlist.setName(name);
+        playlist.setName(sanitizeName(name));
         playlistRepository.save(playlist);
         return "redirect:/playlists";
     }
@@ -140,9 +140,10 @@ public class PlaylistController {
 
         StringBuilder sb = new StringBuilder("#EXTM3U\n");
         for (Channel c : channelRepository.findByPlaylist(playlist)) {
-            String group = c.getGroupTitle() != null ? c.getGroupTitle().replace("\"", "") : "";
-            String name = c.getName() != null ? c.getName() : "";
-            String url = c.getStreamUrl() != null ? c.getStreamUrl() : "";
+            String group = sanitizeAttribute(c.getGroupTitle());
+            String name = sanitizeLine(c.getName());
+            String url = sanitizeLine(c.getStreamUrl());
+            if (url.isBlank()) continue;
             sb.append("#EXTINF:-1 group-title=\"").append(group).append("\",").append(name).append("\n");
             sb.append(url).append("\n");
         }
@@ -151,7 +152,23 @@ public class PlaylistController {
 
         return ResponseEntity.ok()
                 .header("Content-Disposition", "attachment; filename=\"" + filename + "\"")
-                .header("Content-Type", "application/vnd.apple.mpegurl")
+                .header("Content-Type", "audio/x-mpegurl")
                 .body(sb.toString());
+    }
+
+    private String sanitizeName(String name) {
+        if (name == null || name.isBlank()) return "Untitled";
+        String cleaned = name.replaceAll("[\\r\\n]", " ").trim();
+        return cleaned.length() > 100 ? cleaned.substring(0, 100) : cleaned;
+    }
+
+    private String sanitizeAttribute(String s) {
+        if (s == null) return "";
+        return s.replaceAll("[\\r\\n\"]", "").trim();
+    }
+
+    private String sanitizeLine(String s) {
+        if (s == null) return "";
+        return s.replaceAll("[\\r\\n]", "").trim();
     }
 }

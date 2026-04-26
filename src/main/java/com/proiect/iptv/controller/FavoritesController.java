@@ -11,8 +11,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.security.Principal;
-import java.util.Objects;
 import java.util.Optional;
 
 @Controller
@@ -39,11 +40,8 @@ public class FavoritesController {
         User user = userRepository.findByUsername(principal.getName()).orElseThrow();
         Playlist favorites = playlistRepository.findByUserAndLockedTrue(user).orElseThrow();
 
-        Optional<Channel> existing = channelRepository.findByPlaylist(favorites).stream()
-                .filter(c -> name.equals(c.getName())
-                        && Objects.equals(c.getGroupTitle(), category)
-                        && Objects.equals(c.getCountry(), country))
-                .findFirst();
+        Optional<Channel> existing = channelRepository
+                .findByPlaylistAndNameAndGroupTitleAndCountry(favorites, name, category, country);
 
         if (existing.isPresent()) {
             channelRepository.delete(existing.get());
@@ -57,6 +55,20 @@ public class FavoritesController {
             channelRepository.save(channel);
         }
 
-        return "redirect:" + (referer != null ? referer : "/playlists");
+        return "redirect:" + safeReferer(referer);
+    }
+
+    private String safeReferer(String referer) {
+        if (referer == null) return "/playlists";
+        try {
+            URI uri = new URI(referer);
+            String path = uri.getPath();
+            if (path != null && path.startsWith("/") && !path.startsWith("//")) {
+                String query = uri.getQuery();
+                return query != null ? path + "?" + query : path;
+            }
+        } catch (URISyntaxException ignored) {
+        }
+        return "/playlists";
     }
 }

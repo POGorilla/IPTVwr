@@ -8,6 +8,8 @@ import com.proiect.iptv.service.FavoritesService;
 import com.proiect.iptv.service.GeoLocationService;
 import com.proiect.iptv.service.IptvOrgService;
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -16,12 +18,25 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.InetAddress;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URLEncoder;
+import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Controller
 public class BrowseController {
+
+    private static final Logger log = LoggerFactory.getLogger(BrowseController.class);
+    private static final int CONNECT_TIMEOUT_MS = 5000;
+    private static final int READ_TIMEOUT_MS = 15000;
+    private static final int MAX_PLAYLIST_BYTES = 2_000_000;
+
     private final GeoLocationService geoLocationService;
     private final IptvOrgService iptvOrgService;
     private final FavoritesService favoritesService;
@@ -147,29 +162,69 @@ public class BrowseController {
     @GetMapping("/stream")
     @ResponseBody
     public ResponseEntity<StreamingResponseBody> proxyStream(@RequestParam String url) {
+        if (!isSafeUrl(url)) {
+            log.warn("Blocked unsafe stream URL: {}", url);
+            return ResponseEntity.badRequest().build();
+        }
         if (url.endsWith(".m3u8")) {
             return proxyPlaylist(url);
         }
         return proxyDirect(url);
     }
 
+    private boolean isSafeUrl(String url) {
+        if (url == null || url.length() > 2048) return false;
+        try {
+            URI uri = new URI(url);
+            String scheme = uri.getScheme();
+            if (scheme == null
+                    || (!scheme.equalsIgnoreCase("http") && !scheme.equalsIgnoreCase("https"))) {
+                return false;
+            }
+            String host = uri.getHost();
+            if (host == null || host.isBlank()) return false;
+
+            for (InetAddress addr : InetAddress.getAllByName(host)) {
+                if (addr.isLoopbackAddress()
+                        || addr.isLinkLocalAddress()
+                        || addr.isSiteLocalAddress()
+                        || addr.isAnyLocalAddress()
+                        || addr.isMulticastAddress()) {
+                    return false;
+                }
+            }
+            return true;
+        } catch (URISyntaxException | UnknownHostException e) {
+            return false;
+        }
+    }
+
     private ResponseEntity<StreamingResponseBody> proxyPlaylist(String url) {
         StreamingResponseBody body = outputStream -> {
-            try (InputStream is = new java.net.URI(url).toURL().openStream()) {
-                String playlist = new String(is.readAllBytes());
-                String baseUrl = url.substring(0, url.lastIndexOf('/') + 1);
+            HttpURLConnection conn = null;
+            try {
+                conn = (HttpURLConnection) new URI(url).toURL().openConnection();
+                conn.setConnectTimeout(CONNECT_TIMEOUT_MS);
+                conn.setReadTimeout(READ_TIMEOUT_MS);
+                conn.setInstanceFollowRedirects(true);
+                try (InputStream is = conn.getInputStream()) {
+                    String playlist = new String(is.readNBytes(MAX_PLAYLIST_BYTES), StandardCharsets.UTF_8);
+                    String baseUrl = url.substring(0, url.lastIndexOf('/') + 1);
 
-                String rewritten = playlist.lines().map(line -> {
-                    if (!line.startsWith("#") && !line.isEmpty()) {
-                        String segmentUrl = line.startsWith("http") ? line : baseUrl + line;
-                        return "/stream?url=" + java.net.URLEncoder.encode(segmentUrl, java.nio.charset.StandardCharsets.UTF_8);
-                    }
-                    return line;
-                }).collect(Collectors.joining("\n"));
+                    String rewritten = playlist.lines().map(line -> {
+                        if (!line.startsWith("#") && !line.isEmpty()) {
+                            String segmentUrl = line.startsWith("http") ? line : baseUrl + line;
+                            return "/stream?url=" + URLEncoder.encode(segmentUrl, StandardCharsets.UTF_8);
+                        }
+                        return line;
+                    }).collect(Collectors.joining("\n"));
 
-                outputStream.write(rewritten.getBytes());
+                    outputStream.write(rewritten.getBytes(StandardCharsets.UTF_8));
+                }
             } catch (Exception ex) {
-                System.err.println("Playlist proxy failed: " + ex.getMessage());
+                log.warn("Playlist proxy failed for {}: {}", url, ex.getMessage());
+            } finally {
+                if (conn != null) conn.disconnect();
             }
         };
 
@@ -180,10 +235,19 @@ public class BrowseController {
 
     private ResponseEntity<StreamingResponseBody> proxyDirect(String url) {
         StreamingResponseBody body = outputStream -> {
-            try (InputStream is = new java.net.URI(url).toURL().openStream()) {
-                is.transferTo(outputStream);
+            HttpURLConnection conn = null;
+            try {
+                conn = (HttpURLConnection) new URI(url).toURL().openConnection();
+                conn.setConnectTimeout(CONNECT_TIMEOUT_MS);
+                conn.setReadTimeout(READ_TIMEOUT_MS);
+                conn.setInstanceFollowRedirects(true);
+                try (InputStream is = conn.getInputStream()) {
+                    is.transferTo(outputStream);
+                }
             } catch (Exception ex) {
-                System.err.println("Direct proxy failed: " + ex.getMessage());
+                log.warn("Direct proxy failed for {}: {}", url, ex.getMessage());
+            } finally {
+                if (conn != null) conn.disconnect();
             }
         };
 

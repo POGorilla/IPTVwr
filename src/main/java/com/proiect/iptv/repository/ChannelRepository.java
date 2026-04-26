@@ -8,6 +8,11 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ChannelRepository extends JpaRepository<Channel, Long> {
-    Optional<Channel> findByName(String name);
     List<Channel> findByPlaylist(Playlist playlist);
+
+    Optional<Channel> findByPlaylistAndNameAndGroupTitleAndCountry(
+            Playlist playlist, String name, String groupTitle, String country);
+
+    boolean existsByPlaylistAndNameAndGroupTitleAndCountry(
+            Playlist playlist, String name, String groupTitle, String country);
 }
